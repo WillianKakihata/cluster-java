@@ -6,6 +6,7 @@ public class KMeans {
     private int k;
     private double[][] centroids;
     private List<List<double[]>> clusters;
+    private static final double THRESHOLD = 1e-4; // critério de parada (mudança pequena)
 
     public KMeans(int k) {
         this.k = k;
@@ -16,7 +17,7 @@ public class KMeans {
         centroids = new double[k][data[0].length];
         for (int i = 0; i < k; i++) {
             int randomIndex = rand.nextInt(data.length);
-            centroids[i] = data[randomIndex];
+            centroids[i] = Arrays.copyOf(data[randomIndex], data[randomIndex].length);
         }
     }
 
@@ -52,11 +53,13 @@ public class KMeans {
         return Math.sqrt(sum);
     }
 
-    private void updateCentroids() {
+    private boolean updateCentroids() {
+        boolean changed = false;
         for (int i = 0; i < k; i++) {
             double[] newCentroid = new double[centroids[i].length];
             List<double[]> clusterPoints = clusters.get(i);
             if (clusterPoints.isEmpty()) {
+                // mantém o centróide antigo se cluster vazio
                 newCentroid = centroids[i];
             } else {
                 for (double[] point : clusterPoints) {
@@ -68,7 +71,42 @@ public class KMeans {
                     newCentroid[j] /= clusterPoints.size();
                 }
             }
-            centroids[i] = newCentroid;
+            if (!arraysEqualWithinThreshold(centroids[i], newCentroid, THRESHOLD)) {
+                changed = true;
+                centroids[i] = newCentroid;
+            }
+        }
+        return changed;
+    }
+
+    private boolean arraysEqualWithinThreshold(double[] a, double[] b, double threshold) {
+        for (int i = 0; i < a.length; i++) {
+            if (Math.abs(a[i] - b[i]) > threshold) return false;
+        }
+        return true;
+    }
+
+    public void fit(double[][] data) {
+        initializeCentroids(data);
+        boolean centroidsChanged;
+        int iterations = 0;
+        do {
+            assignClusters(data);
+            centroidsChanged = updateCentroids();
+            iterations++;
+        } while (centroidsChanged && iterations < 100); // limita a 100 iterações para evitar loop infinito
+        System.out.println("Convergiu em " + iterations + " iterações");
+    }
+
+    public void printClusters() {
+        System.out.println("-------------------------- CLUSTERS ----------------------------");
+        for (int i = 0; i < k; i++) {
+            System.out.println("Cluster " + i + " centroid: " + Arrays.toString(centroids[i]));
+            System.out.println("Points:");
+            for (double[] point : clusters.get(i)) {
+                System.out.println(Arrays.toString(point));
+            }
+            System.out.println();
         }
     }
 
@@ -79,23 +117,11 @@ public class KMeans {
                 {5.0, 8.0},
                 {8.0, 8.0},
                 {1.0, 0.6},
-                {9.0, 11.0}
+                {9.0, 11.0},
+                {3.0, 5.0}
         };
-        KMeans kMeans = new KMeans(2);
-        kMeans.initializeCentroids(data);
-        kMeans.assignClusters(data);
-        kMeans.updateCentroids();
-        System.out.println("-------------------------- CLUSTER ----------------------------");
-        for (int i = 0; i < kMeans.k; i++) {
-            System.out.println("Cluster " + i + " centroid: " + Arrays.toString(kMeans.centroids[i]));
-            System.out.println("Points:");
-            for (double[] point : kMeans.clusters.get(i)) {
-                System.out.println(Arrays.toString(point));
-            }
-            System.out.println();
-        }
+        KMeans kMeans = new KMeans(3);
+        kMeans.fit(data);
+        kMeans.printClusters();
     }
-
-
-
 }
