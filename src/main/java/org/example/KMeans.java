@@ -3,10 +3,10 @@ package org.example;
 import java.util.*;
 
 public class KMeans {
-    private int k;
+    private final int k;
     private double[][] centroids;
     private List<List<double[]>> clusters;
-    private static final double THRESHOLD = 1e-4; // critério de parada (mudança pequena)
+    private static final double THRESHOLD = 1e-4;
 
     public KMeans(int k) {
         this.k = k;
@@ -20,6 +20,11 @@ public class KMeans {
             centroids[i] = Arrays.copyOf(data[randomIndex], data[randomIndex].length);
         }
     }
+
+    public List<List<double[]>> getClusters() {
+        return clusters;
+    }
+
 
     private void assignClusters(double[][] data) {
         clusters = new ArrayList<>();
@@ -59,7 +64,6 @@ public class KMeans {
             double[] newCentroid = new double[centroids[i].length];
             List<double[]> clusterPoints = clusters.get(i);
             if (clusterPoints.isEmpty()) {
-                // mantém o centróide antigo se cluster vazio
                 newCentroid = centroids[i];
             } else {
                 for (double[] point : clusterPoints) {
@@ -94,34 +98,74 @@ public class KMeans {
             assignClusters(data);
             centroidsChanged = updateCentroids();
             iterations++;
-        } while (centroidsChanged && iterations < 100); // limita a 100 iterações para evitar loop infinito
+        } while (centroidsChanged && iterations < 100);
         System.out.println("Convergiu em " + iterations + " iterações");
     }
 
-    public void printClusters() {
+    public void printClusters(Pessoa[] pessoas, int tamanho) {
+        System.out.println("-------------------------- DADOS ----------------------------");
+        System.out.println("quantidade de pessoas: " + tamanho);
+        for (int i = 0; i < k; i++) {
+            for (Pessoa p : pessoas) {
+                System.out.println("  " + p.nome + " | Idade: " + p.idade + " | Faltas: " + p.faltas);
+            }
+        }
         System.out.println("-------------------------- CLUSTERS ----------------------------");
         for (int i = 0; i < k; i++) {
-            System.out.println("Cluster " + i + " centroid: " + Arrays.toString(centroids[i]));
-            System.out.println("Points:");
+            System.out.println("Cluster " + (i + 1) + " centroid: " + Arrays.toString(centroids[i]));
+            System.out.println("Pessoas:");
             for (double[] point : clusters.get(i)) {
-                System.out.println(Arrays.toString(point));
+                for (Pessoa p : pessoas) {
+                    if (p.faltas == (int) point[0]) {
+                        System.out.println("  " + p.nome + " | Idade: " + p.idade + " | Faltas: " + p.faltas);
+                        break;
+                    }
+                }
             }
             System.out.println();
         }
     }
 
     public static void main(String[] args) {
-        double[][] data = {
-                {1.0, 2.0},
-                {1.5, 1.8},
-                {5.0, 8.0},
-                {8.0, 8.0},
-                {1.0, 0.6},
-                {9.0, 11.0},
-                {3.0, 5.0}
+        Random gerador = new Random();
+        int tamanho = gerador.nextInt(5,100);
+
+        Pessoa[] pessoas = new Pessoa[tamanho];
+
+        String[] nomes = {
+                "Ana", "Bruno", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gabriel", "Helena",
+                "Igor", "Juliana", "Kleber", "Larissa", "Marcelo", "Natália", "Otávio", "Patrícia",
+                "Rafael", "Sabrina", "Thiago", "Vanessa", "Lucas", "Mário", "Carla", "Renato",
+                "Isabela", "Júlio", "Mariana", "André", "Roberta", "Brinquedo", "Victor", "Tatiane",
+                "Luciana", "Fernando", "Bruna", "Vera", "Matheus", "Tatiane", "Fábio", "Alice",
+                "Rodrigo", "Beatriz", "Giovana", "Samuel", "Pedro", "Cláudia", "Simone", "Rita",
+                "João", "Paula", "Felipe", "Gustavo", "Marta", "Priscila", "Sérgio", "Elenice",
+                "Juliana", "Antonio", "Bárbara", "Vanessa", "Marcelo", "Diana", "Lúcia", "Carlos",
+                "Rogério", "Adriana", "Joana", "Vitor", "Robson", "Luana", "Simone", "Maurício",
+                "Eliane", "Kátia", "Tânia", "Walter", "Renata", "Aline", "Ricardo", "Vanessa",
+                "Irene", "Walter", "Denise", "Denilson", "Raquel", "Guilherme", "Sílvia", "Maurício",
+                "Caroline", "Aline", "Alberto", "Leandro", "Fátima", "Camila", "Michele", "Felipe",
+                "Cristiano", "Verônica", "Marcio", "Lúcia", "Lúcio", "Lourdes", "Tadeu", "Elen",
+                "José", "Sérgio", "Ricardo", "Fernanda", "Andréa", "Gabriela", "Igor", "Marcelo",
+                "Larissa", "Sandra", "Diana", "Juliano", "Otávio", "Daniel", "Vânia", "Douglas"
         };
-        KMeans kMeans = new KMeans(3);
+
+
+        for (int i = 0; i < tamanho; i++) {
+            int idade = gerador.nextInt(100);
+            int faltas = gerador.nextInt(15);
+            String nomeAleatorio = nomes[gerador.nextInt(nomes.length)];
+            pessoas[i] = new Pessoa(nomeAleatorio, idade, faltas);
+        }
+
+        double[][] data = new double[pessoas.length][1];
+        for (int i = 0; i < pessoas.length; i++) {
+            data[i][0] = pessoas[i].faltas;
+        }
+
+        KMeans kMeans = new KMeans(10);
         kMeans.fit(data);
-        kMeans.printClusters();
+        kMeans.printClusters(pessoas, tamanho);
     }
+
 }
