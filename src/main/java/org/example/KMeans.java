@@ -55,13 +55,18 @@ public class KMeans {
     private void updateCentroids() {
         for (int i = 0; i < k; i++) {
             double[] newCentroid = new double[centroids[i].length];
-            for (double[] point : clusters.get(i)) {
-                for (int j = 0; j < point.length; j++) {
-                    newCentroid[j] += point[j];
+            List<double[]> clusterPoints = clusters.get(i);
+            if (clusterPoints.isEmpty()) {
+                newCentroid = centroids[i];
+            } else {
+                for (double[] point : clusterPoints) {
+                    for (int j = 0; j < point.length; j++) {
+                        newCentroid[j] += point[j];
+                    }
                 }
-            }
-            for (int j = 0; j < newCentroid.length; j++) {
-                newCentroid[j] /= clusters.get(i).size();
+                for (int j = 0; j < newCentroid.length; j++) {
+                    newCentroid[j] /= clusterPoints.size();
+                }
             }
             centroids[i] = newCentroid;
         }
@@ -81,7 +86,14 @@ public class KMeans {
         kMeans.assignClusters(data);
         kMeans.updateCentroids();
         System.out.println("-------------------------- CLUSTER ----------------------------");
-       
+        for (int i = 0; i < kMeans.k; i++) {
+            System.out.println("Cluster " + i + " centroid: " + Arrays.toString(kMeans.centroids[i]));
+            System.out.println("Points:");
+            for (double[] point : kMeans.clusters.get(i)) {
+                System.out.println(Arrays.toString(point));
+            }
+            System.out.println();
+        }
     }
 
 
