@@ -3,7 +3,7 @@ package org.example;
 import java.util.*;
 
 public class KMeans {
-    private final int k;
+    private int k;
     private double[][] centroids;
     private List<List<double[]>> clusters;
     private static final double THRESHOLD = 1e-4;
@@ -14,10 +14,10 @@ public class KMeans {
 
     private void initializeCentroids(double[][] data) {
         Random rand = new Random();
-        centroids = new double[k][data[0].length];
+        centroids = new double[k][1];
         for (int i = 0; i < k; i++) {
             int randomIndex = rand.nextInt(data.length);
-            centroids[i] = Arrays.copyOf(data[randomIndex], data[randomIndex].length);
+            centroids[i] = Arrays.copyOf(data[randomIndex], 1);
         }
     }
 
@@ -25,10 +25,9 @@ public class KMeans {
         return clusters;
     }
 
-
     private void assignClusters(double[][] data) {
         clusters = new ArrayList<>();
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < centroids.length; i++) {
             clusters.add(new ArrayList<>());
         }
         for (double[] point : data) {
@@ -40,7 +39,7 @@ public class KMeans {
     private int getNearestCentroid(double[] point) {
         int nearestIndex = 0;
         double minDistance = Double.MAX_VALUE;
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < centroids.length; i++) {
             double distance = euclideanDistance(point, centroids[i]);
             if (distance < minDistance) {
                 minDistance = distance;
@@ -51,43 +50,29 @@ public class KMeans {
     }
 
     private double euclideanDistance(double[] point1, double[] point2) {
-        double sum = 0.0;
-        for (int i = 0; i < point1.length; i++) {
-            sum += Math.pow(point1[i] - point2[i], 2);
-        }
-        return Math.sqrt(sum);
+        return Math.abs(point1[0] - point2[0]);
     }
 
     private boolean updateCentroids() {
         boolean changed = false;
-        for (int i = 0; i < k; i++) {
-            double[] newCentroid = new double[centroids[i].length];
+        for (int i = 0; i < clusters.size(); i++) {
+            double[] newCentroid = new double[1];
             List<double[]> clusterPoints = clusters.get(i);
-            if (clusterPoints.isEmpty()) {
-                newCentroid = centroids[i];
-            } else {
+            if (!clusterPoints.isEmpty()) {
                 for (double[] point : clusterPoints) {
-                    for (int j = 0; j < point.length; j++) {
-                        newCentroid[j] += point[j];
-                    }
+                    newCentroid[0] += point[0];
                 }
-                for (int j = 0; j < newCentroid.length; j++) {
-                    newCentroid[j] /= clusterPoints.size();
-                }
+                newCentroid[0] /= clusterPoints.size();
+            } else {
+                newCentroid = centroids[i];
             }
-            if (!arraysEqualWithinThreshold(centroids[i], newCentroid, THRESHOLD)) {
+
+            if (Math.abs(centroids[i][0] - newCentroid[0]) > THRESHOLD) {
                 changed = true;
                 centroids[i] = newCentroid;
             }
         }
         return changed;
-    }
-
-    private boolean arraysEqualWithinThreshold(double[] a, double[] b, double threshold) {
-        for (int i = 0; i < a.length; i++) {
-            if (Math.abs(a[i] - b[i]) > threshold) return false;
-        }
-        return true;
     }
 
     public void fit(double[][] data) {
@@ -99,24 +84,18 @@ public class KMeans {
             centroidsChanged = updateCentroids();
             iterations++;
         } while (centroidsChanged && iterations < 100);
-        System.out.println("Convergiu em " + iterations + " iterações");
+        System.out.println("Convergiu em " + iterations + " itera\u00e7\u00f5es");
     }
 
-    public void printClusters(Pessoa[] pessoas, int tamanho) {
-        System.out.println("-------------------------- DADOS ----------------------------");
-        System.out.println("quantidade de pessoas: " + tamanho);
-        for (int i = 0; i < k; i++) {
-            for (Pessoa p : pessoas) {
-                System.out.println("  " + p.nome + " | Idade: " + p.idade + " | Faltas: " + p.faltas);
-            }
-        }
+    public void printClusters(Pessoa[] pessoas, double[][] data) {
         System.out.println("-------------------------- CLUSTERS ----------------------------");
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < clusters.size(); i++) {
             System.out.println("Cluster " + (i + 1) + " centroid: " + Arrays.toString(centroids[i]));
             System.out.println("Pessoas:");
             for (double[] point : clusters.get(i)) {
-                for (Pessoa p : pessoas) {
-                    if (p.faltas == (int) point[0]) {
+                for (int j = 0; j < data.length; j++) {
+                    if (Arrays.equals(data[j], point)) {
+                        Pessoa p = pessoas[j];
                         System.out.println("  " + p.nome + " | Idade: " + p.idade + " | Faltas: " + p.faltas);
                         break;
                     }
@@ -125,6 +104,52 @@ public class KMeans {
             System.out.println();
         }
     }
+
+    public void refinarClusters() {
+        boolean houveMudanca;
+        do {
+            houveMudanca = false;
+            List<double[]> pontosADistancia = new ArrayList<>();
+
+            for (int i = 0; i < clusters.size(); i++) {
+                double[] centroide = centroids[i];
+                List<double[]> cluster = clusters.get(i);
+
+                Iterator<double[]> it = cluster.iterator();
+                while (it.hasNext()) {
+                    double[] ponto = it.next();
+                    double distancia = Math.abs(ponto[0] - centroide[0]);
+
+                    if (distancia > 20) {
+                        pontosADistancia.add(ponto);
+                        it.remove();
+                        houveMudanca = true;
+                    }
+                }
+            }
+
+            if (!pontosADistancia.isEmpty()) {
+                int novoIndice = clusters.size();
+                clusters.add(new ArrayList<>(pontosADistancia));
+                centroids = Arrays.copyOf(centroids, centroids.length + 1);
+                centroids[novoIndice] = calcularNovoCentroide(pontosADistancia);
+                pontosADistancia.clear();
+            }
+
+            updateCentroids();
+
+        } while (houveMudanca);
+    }
+
+    private double[] calcularNovoCentroide(List<double[]> pontos) {
+        double[] centroide = new double[1];
+        for (double[] ponto : pontos) {
+            centroide[0] += ponto[0];
+        }
+        centroide[0] /= pontos.size();
+        return centroide;
+    }
+
 
     public static void main(String[] args) {
         Random gerador = new Random();
@@ -153,9 +178,10 @@ public class KMeans {
 
         for (int i = 0; i < tamanho; i++) {
             int idade = gerador.nextInt(100);
-            int faltas = gerador.nextInt(15);
+            int faltas = gerador.nextInt(100);
             String nomeAleatorio = nomes[gerador.nextInt(nomes.length)];
             pessoas[i] = new Pessoa(nomeAleatorio, idade, faltas);
+
         }
 
         double[][] data = new double[pessoas.length][1];
@@ -163,9 +189,12 @@ public class KMeans {
             data[i][0] = pessoas[i].faltas;
         }
 
-        KMeans kMeans = new KMeans(10);
+        KMeans kMeans = new KMeans(2);
         kMeans.fit(data);
-        kMeans.printClusters(pessoas, tamanho);
+        System.out.println("-----------------Cluster dinamicos----------");
+        kMeans.refinarClusters();
+        kMeans.printClusters(pessoas, data);
+
     }
 
 }
