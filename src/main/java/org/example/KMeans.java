@@ -5,7 +5,7 @@ import java.util.*;
 public class KMeans {
     private int k;
     private static double[][] centroids;
-    private List<List<Integer>> clustersIndices;  // armazenar índices ao invés dos pontos
+    private List<List<Integer>> clustersIndices;  
     private static final double THRESHOLD = 1e-4;
 
     public KMeans(int k) {
