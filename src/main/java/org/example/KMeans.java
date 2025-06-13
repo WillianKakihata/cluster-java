@@ -186,7 +186,8 @@ public class KMeans {
                 String categoriaPredita = KNN.supervisionado(p, cluster.pessoas.toArray(new Pessoa[0]), k);
                 System.out.println("   Nome: " + p.nome +
                         " | Categoria real: " + p.categoria +
-                        " | Categoria predita (KNN): " + categoriaPredita);
+                        " | Categoria predita (KNN): " + categoriaPredita
+                        + "| Total faltas: " + p.faltas);
             }
             System.out.println();
         }
@@ -217,7 +218,7 @@ public class KMeans {
                 "Larissa", "Sandra", "Diana", "Juliano", "Otávio", "Daniel", "Vânia", "Douglas"
         };
 
-        String[] categorias = {"A", "B"};
+        String[] categorias = {"Aprovado", "Reprovado"};
 
         for (int i = 0; i < tamanho; i++) {
             int idade = gerador.nextInt(18, 60);
@@ -225,7 +226,7 @@ public class KMeans {
             String nomeAleatorio = nomes[gerador.nextInt(nomes.length)];
             //String categoriaAleatoria = categorias[gerador.nextInt(categorias.length)];
 
-            String categoria = (faltas >= 25) ? "B" : "A";
+            String categoria = (faltas >= 25) ? "Reprovado" : "Aprovado";
 
             pessoas[i] = new Pessoa(nomeAleatorio, idade, faltas, categoria);
         }
